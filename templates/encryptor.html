@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}HTML Encryptor - Web Tools{% endblock %}
+
+{% block content %}
+<style>
+    .encryptor-theme {
+        --bs-primary: #28a745;
+        --bs-primary-rgb: 40, 167, 69;
+    }
+    
+    .encryptor-theme .btn-success {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    
+    .encryptor-theme .btn-success:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+    }
+    
+    .encryptor-theme .text-success {
+        color: #28a745 !important;
+    }
+    
+    .encryptor-theme .progress-bar {
+        background-color: #28a745;
+    }
+    
+    .encryptor-theme .border-success {
+        border-color: #28a745 !important;
+    }
+    
+    .encryptor-theme .btn-outline-success {
+        color: #28a745;
+        border-color: #28a745;
+    }
+    
+    .encryptor-theme .btn-outline-success:hover {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    
+    .encryptor-theme .form-section {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.05));
+        border: 1px solid rgba(40, 167, 69, 0.2);
+        border-radius: 12px;
+        padding: 30px;
+    }
+    
+    .encryptor-theme h1 i {
+        color: #28a745 !important;
+    }
+</style>
+
+<div class="encryptor-theme">
+    <div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-lock text-success"></i>
+                HTML Text Encryptor
+            </h1>
+            <p class="lead mb-4">
+                Secure your text content with encryption. Perfect for protecting sensitive information in web applications.
+            </p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="form-section">
+                <h4 class="mb-3">
+                    <i class="fas fa-pencil-alt"></i> Input Text
+                </h4>
+                
+                <div class="mb-3">
+                    <label for="inputText" class="form-label">Text to Encrypt or Decrypt</label>
+                    <textarea class="form-control" id="inputText" rows="8" placeholder="Enter your text here..."></textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password (Optional)</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="password" placeholder="Leave empty for basic encoding">
+                        <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                            <i class="fas fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                    <div class="form-text">Use a password for stronger encryption</div>
+                </div>
+                
+                <div class="row g-2 mb-4">
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-success btn-lg w-100" onclick="encryptText()">
+                            <i class="fas fa-lock"></i> Encrypt
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-warning btn-lg w-100" onclick="decryptText()">
+                            <i class="fas fa-unlock"></i> Decrypt
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-outline-secondary btn-lg w-100" onclick="clearAll()">
+                            <i class="fas fa-trash"></i> Clear
+                        </button>
+                    </div>
+                </div>
+                
+                <h4 class="mb-3">
+                    <i class="fas fa-shield-alt"></i> Output
+                </h4>
+                
+                <div class="mb-3">
+                    <label for="outputText" class="form-label">Result</label>
+                    <textarea class="form-control" id="outputText" rows="8" readonly placeholder="Encrypted or decrypted text will appear here..."></textarea>
+                </div>
+                
+                <div class="d-grid">
+                    <button type="button" class="btn btn-primary" onclick="copyToClipboard()" id="copyBtn">
+                        <i class="fas fa-copy"></i> Copy to Clipboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-info-circle text-info"></i>
+                        How It Works
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Basic Encoding (No Password)</h6>
+                            <ul>
+                                <li>Base64 encoding for simple obfuscation</li>
+                                <li>HTML-safe output</li>
+                                <li>Perfect for hiding spoilers or sensitive text</li>
+                                <li>Easily reversible</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Password Encryption</h6>
+                            <ul>
+                                <li>AES encryption with your password</li>
+                                <li>Strong security for sensitive data</li>
+                                <li>Requires the same password to decrypt</li>
+                                <li>Suitable for confidential information</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Important:</strong> Keep your password safe! Without it, encrypted text cannot be recovered.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<script>
+// Password visibility toggle
+document.getElementById('togglePassword').addEventListener('click', function() {
+    const passwordField = document.getElementById('password');
+    const eyeIcon = document.getElementById('eyeIcon');
+    
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        eyeIcon.className = 'fas fa-eye-slash';
+    } else {
+        passwordField.type = 'password';
+        eyeIcon.className = 'fas fa-eye';
+    }
+});
+
+function encryptText() {
+    const inputText = document.getElementById('inputText').value;
+    const password = document.getElementById('password').value;
+    const outputElement = document.getElementById('outputText');
+    
+    if (!inputText.trim()) {
+        alert('Please enter some text to encrypt');
+        return;
+    }
+    
+    try {
+        let encrypted;
+        let encryptionMethod;
+        
+        if (password) {
+            // Use AES encryption with password
+            encrypted = CryptoJS.AES.encrypt(inputText, password).toString();
+            encryptionMethod = 'aes';
+        } else {
+            // Use Base64 encoding for basic obfuscation
+            encrypted = btoa(unescape(encodeURIComponent(inputText)));
+            encryptionMethod = 'base64';
+        }
+        
+        outputElement.value = encrypted;
+        
+        // Log encryption activity
+        logEncryptionActivity('encrypt', encryptionMethod, !!password, inputText.length, encrypted.length);
+        
+        // Show success message
+        showMessage('Text encrypted successfully!', 'success');
+        
+    } catch (error) {
+        showMessage('Encryption failed: ' + error.message, 'error');
+    }
+}
+
+function decryptText() {
+    const encryptedText = document.getElementById('inputText').value;
+    const password = document.getElementById('password').value;
+    
+    if (!encryptedText.trim()) {
+        alert('Please enter text to decrypt');
+        return;
+    }
+    
+    try {
+        let decrypted;
+        let decryptionMethod = '';
+        
+        // First try to determine if it's AES or Base64 encrypted
+        // AES encrypted text typically contains special characters and is longer
+        // Base64 only contains A-Z, a-z, 0-9, +, /, = characters
+        
+        const isBase64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+        
+        if (password) {
+            // User provided password, try AES decryption first
+            try {
+                const bytes = CryptoJS.AES.decrypt(encryptedText, password);
+                decrypted = bytes.toString(CryptoJS.enc.Utf8);
+                
+                if (!decrypted) {
+                    throw new Error('AES decryption failed');
+                }
+                decryptionMethod = 'AES';
+            } catch (aesError) {
+                // If AES fails and text looks like Base64, try Base64
+                if (isBase64Pattern.test(encryptedText)) {
+                    decrypted = decodeURIComponent(escape(atob(encryptedText)));
+                    decryptionMethod = 'Base64';
+                } else {
+                    throw new Error('Failed to decrypt with password. Check your password.');
+                }
+            }
+        } else {
+            // No password provided, try Base64 first, then suggest password
+            if (isBase64Pattern.test(encryptedText)) {
+                try {
+                    decrypted = decodeURIComponent(escape(atob(encryptedText)));
+                    decryptionMethod = 'Base64';
+                } catch (base64Error) {
+                    throw new Error('This appears to be password-encrypted text. Please enter the password.');
+                }
+            } else {
+                throw new Error('This appears to be password-encrypted text. Please enter the password.');
+            }
+        }
+        
+        document.getElementById('outputText').value = decrypted;
+        
+        // Log decryption activity
+        logEncryptionActivity('decrypt', decryptionMethod.toLowerCase(), !!password, encryptedText.length, decrypted.length);
+        
+        showMessage(`Text decrypted successfully using ${decryptionMethod}!`, 'success');
+        
+    } catch (error) {
+        showMessage('Decryption failed: ' + error.message, 'error');
+    }
+}
+
+function copyToClipboard() {
+    const outputText = document.getElementById('outputText');
+    outputText.select();
+    outputText.setSelectionRange(0, 99999);
+    
+    try {
+        document.execCommand('copy');
+        showMessage('Copied to clipboard!', 'success');
+    } catch (error) {
+        showMessage('Failed to copy to clipboard', 'error');
+    }
+}
+
+function clearAll() {
+    document.getElementById('inputText').value = '';
+    document.getElementById('outputText').value = '';
+    document.getElementById('password').value = '';
+    
+    // Clear localStorage
+    localStorage.removeItem('encryptor_input');
+    localStorage.removeItem('encryptor_output');
+    
+    showMessage('All fields cleared', 'info');
+}
+
+function showMessage(message, type) {
+    // Remove existing messages
+    const existingMessages = document.querySelectorAll('.temp-message');
+    existingMessages.forEach(msg => msg.remove());
+    
+    // Create new message
+    const messageElement = document.createElement('div');
+    messageElement.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} temp-message`;
+    messageElement.innerHTML = `
+        <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check' : 'info-circle'}"></i>
+        ${message}
+    `;
+    
+    // Insert after the title
+    const title = document.querySelector('h1');
+    title.parentNode.insertBefore(messageElement, title.nextSibling);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        messageElement.remove();
+    }, 3000);
+}
+
+// Auto-save functionality
+document.getElementById('inputText').addEventListener('input', function() {
+    localStorage.setItem('encryptor_input', this.value);
+});
+
+document.getElementById('outputText').addEventListener('input', function() {
+    localStorage.setItem('encryptor_output', this.value);
+});
+
+// Log encryption activity to server
+async function logEncryptionActivity(operationType, encryptionMethod, hasPassword, inputLength, outputLength) {
+    try {
+        await fetch('/api/log-encryption', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                operation_type: operationType,
+                encryption_method: encryptionMethod,
+                has_password: hasPassword,
+                input_length: inputLength,
+                output_length: outputLength
+            })
+        });
+    } catch (error) {
+        console.log('Failed to log encryption activity:', error);
+    }
+}
+
+// Load saved content on page load
+window.addEventListener('load', function() {
+    const savedInput = localStorage.getItem('encryptor_input');
+    const savedOutput = localStorage.getItem('encryptor_output');
+    
+    if (savedInput) {
+        document.getElementById('inputText').value = savedInput;
+    }
+    
+    if (savedOutput) {
+        document.getElementById('outputText').value = savedOutput;
+    }
+});
+</script>
+{% endblock %}

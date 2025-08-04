@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Web Tools - Home{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 text-center">
+            <h1 class="display-4 mb-4">
+                <i class="fas fa-tools text-primary"></i>
+                Web Tools
+            </h1>
+            <p class="lead mb-5">
+                Powerful utilities for web development, analysis, and content processing.
+                Choose a tool below to get started.
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card tool-card h-100 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-spider fa-3x text-primary"></i>
+                    </div>
+                    <h4 class="card-title">Web Crawler</h4>
+                    <p class="card-text">
+                        Systematically discover and analyze web pages. Search for specific content,
+                        extract links, and export results to CSV.
+                    </p>
+                    <ul class="list-unstyled text-start">
+                        <li><i class="fas fa-check text-success"></i> Crawl websites respectfully</li>
+                        <li><i class="fas fa-check text-success"></i> Search for specific words/phrases</li>
+                        <li><i class="fas fa-check text-success"></i> Extract links and metadata</li>
+                        <li><i class="fas fa-check text-success"></i> Export results to CSV</li>
+                    </ul>
+                    <a href="/web-crawler" class="btn btn-primary btn-lg mt-3">
+                        <i class="fas fa-spider"></i> Launch Crawler
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card tool-card h-100 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-lock fa-3x text-success"></i>
+                    </div>
+                    <h4 class="card-title">HTML Text Encryptor</h4>
+                    <p class="card-text">
+                        Secure your text content with advanced encryption techniques.
+                        Perfect for protecting sensitive information.
+                    </p>
+                    <ul class="list-unstyled text-start">
+                        <li><i class="fas fa-check text-success"></i> Secure text encryption</li>
+                        <li><i class="fas fa-check text-success"></i> HTML-safe output</li>
+                        <li><i class="fas fa-check text-success"></i> Easy integration</li>
+                        <li><i class="fas fa-check text-success"></i> Decrypt functionality</li>
+                    </ul>
+                    <a href="/html-encryptor" class="btn btn-success btn-lg mt-3">
+                        <i class="fas fa-lock"></i> Launch Encryptor
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card tool-card h-100 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-globe fa-3x" style="color: #6f42c1;"></i>
+                    </div>
+                    <h4 class="card-title">Web Proxy</h4>
+                    <p class="card-text">
+                        Safely browse websites through our proxy server.
+                        Access blocked content and maintain privacy.
+                    </p>
+                    <ul class="list-unstyled text-start">
+                        <li><i class="fas fa-check text-success"></i> Anonymous browsing</li>
+                        <li><i class="fas fa-check text-success"></i> Bypass restrictions</li>
+                        <li><i class="fas fa-check text-success"></i> Secure connections</li>
+                        <li><i class="fas fa-check text-success"></i> Fast and reliable</li>
+                    </ul>
+                    <a href="/web-proxy" class="btn btn-lg mt-3" style="background-color: #6f42c1; color: white;">
+                        <i class="fas fa-globe"></i> Launch Proxy
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+{% endblock %}

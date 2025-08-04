@@ -1,0 +1,486 @@
+{% extends "base.html" %}
+
+{% block title %}Web Crawler - Web Tools{% endblock %}
+
+{% block content %}
+<style>
+    .crawler-theme {
+        --bs-primary: #007bff;
+        --bs-primary-rgb: 0, 123, 255;
+    }
+    
+    .crawler-theme .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+    
+    .crawler-theme .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #004085;
+    }
+    
+    .crawler-theme .text-primary {
+        color: #007bff !important;
+    }
+    
+    .crawler-theme .progress-bar {
+        background-color: #007bff;
+    }
+    
+    .crawler-theme .border-primary {
+        border-color: #007bff !important;
+    }
+    
+    .crawler-theme .btn-outline-primary {
+        color: #007bff;
+        border-color: #007bff;
+    }
+    
+    .crawler-theme .btn-outline-primary:hover {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+    
+    .crawler-theme .form-section {
+        background: linear-gradient(135deg, rgba(0, 123, 255, 0.1), rgba(0, 123, 255, 0.05));
+        border: 1px solid rgba(0, 123, 255, 0.2);
+        border-radius: 12px;
+        padding: 30px;
+    }
+    
+    .crawler-theme .results-section {
+        background: linear-gradient(135deg, rgba(0, 123, 255, 0.05), rgba(0, 123, 255, 0.02));
+        border: 1px solid rgba(0, 123, 255, 0.1);
+        border-radius: 12px;
+        padding: 30px;
+    }
+    
+    .crawler-theme h1 i {
+        color: #007bff !important;
+    }
+</style>
+
+<div class="crawler-theme">
+    <div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-spider text-primary"></i>
+                Web Crawler
+            </h1>
+            <p class="lead mb-4">
+                Systematically discover and analyze web pages. Configure your crawling parameters below.
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-4">
+            <!-- Crawler Configuration Form -->
+            <div class="form-section">
+                <h4 class="mb-3">
+                    <i class="fas fa-cog"></i> Configuration
+                </h4>
+                
+                <form id="crawlerForm">
+                    <!-- URL Input -->
+                    <div class="mb-3">
+                        <label for="url" class="form-label">
+                            <i class="fas fa-link"></i> Website URL
+                        </label>
+                        <input type="url" class="form-control" id="url" placeholder="https://example.com" required>
+                        <div class="form-text">Enter the starting URL to crawl</div>
+                    </div>
+
+                    <!-- Search Type -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-search"></i> What to Analyze
+                        </label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="searchType" id="searchBoth" value="both" checked>
+                            <label class="form-check-label" for="searchBoth">
+                                <strong>Both Text & Links</strong> - Complete analysis
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="searchType" id="searchText" value="text">
+                            <label class="form-check-label" for="searchText">
+                                <strong>Text Content Only</strong> - Search for specific words
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="searchType" id="searchLinks" value="links">
+                            <label class="form-check-label" for="searchLinks">
+                                <strong>Links Only</strong> - Extract and count links
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Search Words (conditional) -->
+                    <div class="mb-3" id="searchWordsContainer">
+                        <label for="searchWords" class="form-label">
+                            <i class="fas fa-search"></i> Search Words/Phrases
+                        </label>
+                        <input type="text" class="form-control" id="searchWords" placeholder="python, programming, code">
+                        <div class="form-text">Comma-separated words or phrases to search for</div>
+                    </div>
+
+                    <!-- Crawling Depth -->
+                    <div class="mb-3">
+                        <label for="depth" class="form-label">
+                            <i class="fas fa-layer-group"></i> Crawling Depth: <span id="depthValue">2</span>
+                        </label>
+                        <input type="range" class="form-range" id="depth" min="1" max="5" value="2" oninput="updateDepthValue(this.value)">
+                        <div class="form-text">How many levels deep to crawl (1 = only starting page)</div>
+                    </div>
+
+                    <!-- Max Pages -->
+                    <div class="mb-3">
+                        <label for="maxPages" class="form-label">
+                            <i class="fas fa-file-alt"></i> Maximum Pages: <span id="maxPagesValue">10</span>
+                        </label>
+                        <input type="range" class="form-range" id="maxPages" min="1" max="100" value="10" oninput="updateMaxPagesValue(this.value)">
+                        <div class="form-text">Maximum number of pages to crawl</div>
+                    </div>
+
+                    <!-- Delay -->
+                    <div class="mb-3">
+                        <label for="delay" class="form-label">
+                            <i class="fas fa-clock"></i> Delay Between Requests: <span id="delayValue">1.0</span>s
+                        </label>
+                        <input type="range" class="form-range" id="delay" min="0.5" max="5" step="0.5" value="1.0" oninput="updateDelayValue(this.value)">
+                        <div class="form-text">Be respectful to web servers</div>
+                    </div>
+
+                    <!-- Advanced Options -->
+                    <div class="accordion mb-3" id="advancedOptions">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingAdvanced">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAdvanced">
+                                    <i class="fas fa-cogs"></i> Advanced Options
+                                </button>
+                            </h2>
+                            <div id="collapseAdvanced" class="accordion-collapse collapse" data-bs-parent="#advancedOptions">
+                                <div class="accordion-body">
+                                    <!-- Allowed Domains -->
+                                    <div class="mb-3">
+                                        <label for="domains" class="form-label">
+                                            <i class="fas fa-globe"></i> Allowed Domains
+                                        </label>
+                                        <input type="text" class="form-control" id="domains" placeholder="example.com, blog.example.com">
+                                        <div class="form-text">Leave empty to crawl only the starting domain</div>
+                                    </div>
+
+                                    <!-- Respect Robots.txt -->
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="respectRobots" checked>
+                                        <label class="form-check-label" for="respectRobots">
+                                            <i class="fas fa-robot"></i> Respect robots.txt (recommended)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Start Button -->
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-play"></i> Start Crawling
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <!-- Status Section -->
+            <div id="statusSection" class="results-section mb-4" style="display: none;">
+                <h4 class="mb-3">
+                    <i class="fas fa-info-circle"></i> Crawling Status
+                </h4>
+                <div id="statusContent">
+                    <!-- Status will be populated here -->
+                </div>
+                <div class="progress mt-3" style="display: none;" id="progressContainer">
+                    <div class="progress-bar" role="progressbar" style="width: 0%" id="progressBar"></div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="results-section" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">
+                        <i class="fas fa-list"></i> Crawling Results
+                    </h4>
+                    <button class="btn btn-success" id="downloadBtn" style="display: none;">
+                        <i class="fas fa-download"></i> Download CSV
+                    </button>
+                </div>
+                
+                <div id="summaryContent" class="mb-4">
+                    <!-- Summary will be populated here -->
+                </div>
+
+                <div id="resultsContent">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="results-section" id="instructionsSection">
+                <h4 class="mb-3">
+                    <i class="fas fa-lightbulb"></i> How to Use
+                </h4>
+                <ol>
+                    <li><strong>Enter a URL</strong> - Start with any website you want to analyze</li>
+                    <li><strong>Choose what to analyze</strong> - Text content, links, or both</li>
+                    <li><strong>Set search words</strong> - If analyzing text, specify what to look for</li>
+                    <li><strong>Configure depth and limits</strong> - Control how extensive the crawl is</li>
+                    <li><strong>Start crawling</strong> - The crawler will work respectfully and show progress</li>
+                    <li><strong>Download results</strong> - Export findings as CSV for further analysis</li>
+                </ol>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Note:</strong> This crawler respects robots.txt and includes delays to be considerate to web servers.
+                    It's designed for research, SEO analysis, and content discovery.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentJobId = null;
+let statusCheckInterval = null;
+
+// Update range sliders
+function updateDepthValue(value) {
+    document.getElementById('depthValue').textContent = value;
+}
+
+function updateMaxPagesValue(value) {
+    document.getElementById('maxPagesValue').textContent = value;
+}
+
+function updateDelayValue(value) {
+    document.getElementById('delayValue').textContent = value;
+}
+
+// Show/hide search words based on search type
+document.querySelectorAll('input[name="searchType"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const container = document.getElementById('searchWordsContainer');
+        if (this.value === 'links') {
+            container.style.display = 'none';
+        } else {
+            container.style.display = 'block';
+        }
+    });
+});
+
+// Form submission
+document.getElementById('crawlerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        url: document.getElementById('url').value,
+        searchType: document.querySelector('input[name="searchType"]:checked').value,
+        searchWords: document.getElementById('searchWords').value,
+        depth: parseInt(document.getElementById('depth').value),
+        maxPages: parseInt(document.getElementById('maxPages').value),
+        delay: parseFloat(document.getElementById('delay').value),
+        domains: document.getElementById('domains').value,
+        respectRobots: document.getElementById('respectRobots').checked
+    };
+    
+    try {
+        // Show status section
+        document.getElementById('statusSection').style.display = 'block';
+        document.getElementById('instructionsSection').style.display = 'none';
+        document.getElementById('resultsSection').style.display = 'none';
+        
+        const response = await fetch('/api/crawl', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            currentJobId = result.job_id;
+            startStatusChecking();
+        } else {
+            showError(result.error || 'Failed to start crawling');
+        }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+    }
+});
+
+function startStatusChecking() {
+    statusCheckInterval = setInterval(checkStatus, 2000);
+    checkStatus(); // Check immediately
+}
+
+async function checkStatus() {
+    if (!currentJobId) return;
+    
+    try {
+        const response = await fetch(`/api/crawl/status/${currentJobId}`);
+        const status = await response.json();
+        
+        updateStatusDisplay(status);
+        
+        if (status.status === 'completed') {
+            clearInterval(statusCheckInterval);
+            loadResults();
+        } else if (status.status === 'error') {
+            clearInterval(statusCheckInterval);
+            showError(status.message);
+        }
+    } catch (error) {
+        console.error('Status check failed:', error);
+    }
+}
+
+function updateStatusDisplay(status) {
+    const statusContent = document.getElementById('statusContent');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    
+    let statusClass = 'status-running';
+    if (status.status === 'completed') statusClass = 'status-completed';
+    if (status.status === 'error') statusClass = 'status-error';
+    
+    statusContent.innerHTML = `
+        <div class="status-indicator ${statusClass}">
+            <i class="fas fa-${status.status === 'running' ? 'spinner fa-spin' : status.status === 'completed' ? 'check' : 'times'}"></i>
+            ${status.message}
+        </div>
+        ${status.total_pages ? `<p class="mt-2 mb-0">Pages crawled: ${status.total_pages}</p>` : ''}
+    `;
+    
+    if (status.progress !== undefined) {
+        progressContainer.style.display = 'block';
+        progressBar.style.width = status.progress + '%';
+    }
+}
+
+async function loadResults() {
+    try {
+        const response = await fetch(`/api/crawl/results/${currentJobId}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            displayResults(data);
+        } else {
+            showError(data.error || 'Failed to load results');
+        }
+    } catch (error) {
+        showError('Failed to load results: ' + error.message);
+    }
+}
+
+function displayResults(data) {
+    const resultsSection = document.getElementById('resultsSection');
+    const summaryContent = document.getElementById('summaryContent');
+    const resultsContent = document.getElementById('resultsContent');
+    const downloadBtn = document.getElementById('downloadBtn');
+    
+    // Show results section
+    resultsSection.style.display = 'block';
+    
+    // Display summary
+    summaryContent.innerHTML = `
+        <div class="row text-center">
+            <div class="col-md-3">
+                <h5>${data.summary.total_pages}</h5>
+                <small class="text-muted">Pages Crawled</small>
+            </div>
+            <div class="col-md-3">
+                <h5>${data.summary.total_urls_discovered}</h5>
+                <small class="text-muted">URLs Discovered</small>
+            </div>
+            <div class="col-md-3">
+                <h5>${data.summary.search_type}</h5>
+                <small class="text-muted">Analysis Type</small>
+            </div>
+            <div class="col-md-3">
+                <h5>${new Date(data.summary.completed_at).toLocaleTimeString()}</h5>
+                <small class="text-muted">Completed At</small>
+            </div>
+        </div>
+    `;
+    
+    // Display results
+    let resultsHtml = '';
+    data.results.forEach((page, index) => {
+        let wordMatchesHtml = '';
+        if (page.word_matches && Object.keys(page.word_matches).length > 0) {
+            const matches = Object.entries(page.word_matches)
+                .filter(([word, count]) => count > 0)
+                .map(([word, count]) => `<span class="badge bg-primary">${word}: ${count}</span>`)
+                .join(' ');
+            if (matches) {
+                wordMatchesHtml = `<div class="mt-2"><strong>Word matches:</strong> ${matches}</div>`;
+            }
+        }
+        
+        resultsHtml += `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <a href="${page.url}" target="_blank" class="text-decoration-none">
+                            ${page.title || 'No title'}
+                            <i class="fas fa-external-link-alt fa-xs"></i>
+                        </a>
+                    </h6>
+                    <p class="card-text small text-muted">${page.url}</p>
+                    ${page.description ? `<p class="card-text">${page.description}</p>` : ''}
+                    <div class="row text-center">
+                        <div class="col">
+                            <small><strong>Status:</strong> ${page.status_code}</small>
+                        </div>
+                        <div class="col">
+                            <small><strong>Size:</strong> ${(page.content_length / 1024).toFixed(1)}KB</small>
+                        </div>
+                        ${page.links_found !== undefined ? `<div class="col"><small><strong>Links:</strong> ${page.links_found}</small></div>` : ''}
+                        ${page.total_word_matches !== undefined ? `<div class="col"><small><strong>Matches:</strong> ${page.total_word_matches}</small></div>` : ''}
+                    </div>
+                    ${wordMatchesHtml}
+                </div>
+            </div>
+        `;
+    });
+    
+    resultsContent.innerHTML = resultsHtml;
+    
+    // Show download button
+    downloadBtn.style.display = 'block';
+    downloadBtn.onclick = () => downloadResults();
+}
+
+function downloadResults() {
+    if (currentJobId) {
+        window.open(`/api/crawl/download/${currentJobId}`, '_blank');
+    }
+}
+
+function showError(message) {
+    const statusContent = document.getElementById('statusContent');
+    statusContent.innerHTML = `
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i>
+            ${message}
+        </div>
+    `;
+}
+</script>
+{% endblock %}

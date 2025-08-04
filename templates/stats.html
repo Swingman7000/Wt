@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+
+{% block title %}Statistics - Web Tools{% endblock %}
+
+{% block content %}
+<style>
+    .stats-theme {
+        --bs-primary: #17a2b8;
+        --bs-primary-rgb: 23, 162, 184;
+    }
+    
+    .stats-theme .btn-primary {
+        background-color: #17a2b8;
+        border-color: #17a2b8;
+    }
+    
+    .stats-theme .text-primary {
+        color: #17a2b8 !important;
+    }
+    
+    .stats-theme h1 i {
+        color: #17a2b8 !important;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(23, 162, 184, 0.05));
+        border: 1px solid rgba(23, 162, 184, 0.2);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        height: 100%;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #17a2b8;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .table-responsive {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
+
+<div class="stats-theme">
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="fas fa-chart-bar text-primary"></i>
+                    Usage Statistics
+                </h1>
+                <p class="lead mb-4">
+                    View comprehensive statistics about web tools usage and performance.
+                </p>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingStats" class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading statistics...</p>
+        </div>
+
+        <!-- Stats Content -->
+        <div id="statsContent" style="display: none;">
+            <!-- Overview Cards -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalCrawlJobs">0</div>
+                        <div class="stat-label">Crawl Jobs</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalEncryptions">0</div>
+                        <div class="stat-label">Encryptions</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalProxyRequests">0</div>
+                        <div class="stat-label">Proxy Requests</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalPageViews">0</div>
+                        <div class="stat-label">Page Views</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tool Usage Chart -->
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-tools"></i> Tool Usage by Day
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="toolUsageChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-spider"></i> Recent Crawl Jobs
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>URL</th>
+                                            <th>Status</th>
+                                            <th>Pages</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentCrawls">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-pie"></i> Tool Popularity
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="toolPopularity">
+                                <!-- Will be populated with tool usage bars -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Refresh Button -->
+            <div class="row mt-4">
+                <div class="col-12 text-center">
+                    <button class="btn btn-primary" onclick="loadStats()">
+                        <i class="fas fa-refresh"></i> Refresh Statistics
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let toolUsageChart;
+
+async function loadStats() {
+    try {
+        document.getElementById('loadingStats').style.display = 'block';
+        document.getElementById('statsContent').style.display = 'none';
+        
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+        
+        if (response.ok) {
+            updateStatCards(data);
+            updateRecentCrawls(data.recent_crawls || []);
+            updateToolPopularity(data.tool_usage || []);
+            updateToolUsageChart(data.tool_usage || []);
+            
+            document.getElementById('loadingStats').style.display = 'none';
+            document.getElementById('statsContent').style.display = 'block';
+        } else {
+            showError('Failed to load statistics: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+    }
+}
+
+function updateStatCards(data) {
+    document.getElementById('totalCrawlJobs').textContent = data.total_crawl_jobs || 0;
+    document.getElementById('totalEncryptions').textContent = data.total_encryption_operations || 0;
+    document.getElementById('totalProxyRequests').textContent = data.total_proxy_requests || 0;
+    
+    // Calculate total page views
+    const totalViews = (data.tool_usage || []).reduce((sum, tool) => sum + tool.page_views, 0);
+    document.getElementById('totalPageViews').textContent = totalViews;
+}
+
+function updateRecentCrawls(crawls) {
+    const tbody = document.getElementById('recentCrawls');
+    tbody.innerHTML = '';
+    
+    if (crawls.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No crawl jobs found</td></tr>';
+        return;
+    }
+    
+    crawls.forEach(crawl => {
+        const row = document.createElement('tr');
+        const statusBadge = getStatusBadge(crawl.status);
+        const date = new Date(crawl.created_at).toLocaleDateString();
+        const shortUrl = crawl.url.length > 30 ? crawl.url.substring(0, 30) + '...' : crawl.url;
+        
+        row.innerHTML = `
+            <td><small>${shortUrl}</small></td>
+            <td>${statusBadge}</td>
+            <td>${crawl.total_pages}</td>
+            <td><small>${date}</small></td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function getStatusBadge(status) {
+    const badges = {
+        'completed': '<span class="badge bg-success">Completed</span>',
+        'running': '<span class="badge bg-primary">Running</span>',
+        'pending': '<span class="badge bg-warning">Pending</span>',
+        'error': '<span class="badge bg-danger">Error</span>'
+    };
+    return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+}
+
+function updateToolPopularity(toolUsage) {
+    const container = document.getElementById('toolPopularity');
+    container.innerHTML = '';
+    
+    if (toolUsage.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">No usage data available</p>';
+        return;
+    }
+    
+    // Group by tool name and sum page views
+    const toolSums = {};
+    toolUsage.forEach(tool => {
+        if (!toolSums[tool.tool_name]) {
+            toolSums[tool.tool_name] = 0;
+        }
+        toolSums[tool.tool_name] += tool.page_views;
+    });
+    
+    const maxViews = Math.max(...Object.values(toolSums));
+    
+    Object.entries(toolSums).forEach(([toolName, views]) => {
+        const percentage = maxViews > 0 ? (views / maxViews) * 100 : 0;
+        const toolDisplay = toolName.charAt(0).toUpperCase() + toolName.slice(1);
+        
+        const progressBar = document.createElement('div');
+        progressBar.className = 'mb-3';
+        progressBar.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span>${toolDisplay}</span>
+                <span class="text-muted">${views} views</span>
+            </div>
+            <div class="progress">
+                <div class="progress-bar bg-info" role="progressbar" style="width: ${percentage}%"></div>
+            </div>
+        `;
+        container.appendChild(progressBar);
+    });
+}
+
+function updateToolUsageChart(toolUsage) {
+    const ctx = document.getElementById('toolUsageChart').getContext('2d');
+    
+    if (toolUsageChart) {
+        toolUsageChart.destroy();
+    }
+    
+    // Group data by date and tool
+    const dateMap = {};
+    toolUsage.forEach(tool => {
+        const date = tool.date;
+        if (!dateMap[date]) {
+            dateMap[date] = {};
+        }
+        dateMap[date][tool.tool_name] = tool.page_views;
+    });
+    
+    const dates = Object.keys(dateMap).sort();
+    const tools = ['home', 'crawler', 'encryptor', 'proxy'];
+    const colors = {
+        'home': '#6c757d',
+        'crawler': '#007bff',
+        'encryptor': '#28a745',
+        'proxy': '#6f42c1'
+    };
+    
+    const datasets = tools.map(tool => ({
+        label: tool.charAt(0).toUpperCase() + tool.slice(1),
+        data: dates.map(date => dateMap[date][tool] || 0),
+        backgroundColor: colors[tool] || '#17a2b8',
+        borderColor: colors[tool] || '#17a2b8',
+        borderWidth: 1
+    }));
+    
+    toolUsageChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: dates,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            }
+        }
+    });
+}
+
+function showError(message) {
+    document.getElementById('loadingStats').style.display = 'none';
+    document.getElementById('statsContent').innerHTML = `
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i>
+            ${message}
+        </div>
+    `;
+    document.getElementById('statsContent').style.display = 'block';
+}
+
+// Load stats when page loads
+document.addEventListener('DOMContentLoaded', loadStats);
+</script>
+{% endblock %}

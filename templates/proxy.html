@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}Web Proxy - Web Tools{% endblock %}
+
+{% block content %}
+<style>
+    .proxy-theme {
+        --bs-primary: #6f42c1;
+        --bs-primary-rgb: 111, 66, 193;
+    }
+    
+    .proxy-theme .btn-primary {
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+    }
+    
+    .proxy-theme .btn-primary:hover {
+        background-color: #5d2bad;
+        border-color: #5d2bad;
+    }
+    
+    .proxy-theme .text-primary {
+        color: #6f42c1 !important;
+    }
+    
+    .proxy-theme .progress-bar {
+        background-color: #6f42c1;
+    }
+    
+    .proxy-theme .border-primary {
+        border-color: #6f42c1 !important;
+    }
+    
+    .proxy-theme .btn-outline-primary {
+        color: #6f42c1;
+        border-color: #6f42c1;
+    }
+    
+    .proxy-theme .btn-outline-primary:hover {
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+    }
+    
+    .iframe-container {
+        position: relative;
+        width: 100%;
+        height: 600px;
+        border: 2px solid #6f42c1;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .iframe-container iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+    
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+    }
+    
+    .proxy-controls {
+        background: linear-gradient(135deg, #6f42c1, #5d2bad);
+        color: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+</style>
+
+<div class="proxy-theme">
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="fas fa-globe text-primary"></i>
+                    Web Proxy
+                </h1>
+                <p class="lead mb-4">
+                    Browse websites anonymously through our secure proxy server. Access content safely and bypass restrictions.
+                </p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="proxy-controls">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <div class="mb-3 mb-md-0">
+                                <label for="proxyUrl" class="form-label">
+                                    <i class="fas fa-link"></i> Enter Website URL
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-shield-alt"></i>
+                                    </span>
+                                    <input type="url" class="form-control form-control-lg" id="proxyUrl" 
+                                           placeholder="https://example.com" value="https://example.com">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-light btn-lg w-100" onclick="loadProxyPage()">
+                                <i class="fas fa-arrow-right"></i> Browse Safely
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="removeScripts" checked>
+                                <label class="form-check-label" for="removeScripts">
+                                    <i class="fas fa-code"></i> Remove JavaScript (Safer)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="removeCookies" checked>
+                                <label class="form-check-label" for="removeCookies">
+                                    <i class="fas fa-cookie-bite"></i> Block Cookies
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="fas fa-browser"></i> 
+                            Proxied Content: <span id="currentUrl">Ready to browse</span>
+                        </span>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-primary" onclick="refreshProxy()">
+                                <i class="fas fa-refresh"></i> Refresh
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="goBack()">
+                                <i class="fas fa-arrow-left"></i> Back
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="goForward()">
+                                <i class="fas fa-arrow-right"></i> Forward
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="iframe-container">
+                            <div class="loading-overlay" id="loadingOverlay">
+                                <div class="text-center">
+                                    <div class="spinner-border text-primary mb-3" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <div>Loading secure connection...</div>
+                                </div>
+                            </div>
+                            <iframe id="proxyFrame" src="" 
+                                    onload="hideLoading()" 
+                                    onerror="showError()">
+                            </iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-shield-alt text-primary"></i>
+                            Proxy Features & Security
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h6><i class="fas fa-user-secret"></i> Privacy Protection</h6>
+                                <ul class="small">
+                                    <li>Your IP address is hidden</li>
+                                    <li>Anonymous browsing</li>
+                                    <li>No tracking cookies</li>
+                                    <li>Secure HTTPS connections</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <h6><i class="fas fa-lock"></i> Security Features</h6>
+                                <ul class="small">
+                                    <li>JavaScript filtering</li>
+                                    <li>Malicious content blocking</li>
+                                    <li>SSL/TLS encryption</li>
+                                    <li>Safe content delivery</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <h6><i class="fas fa-globe"></i> Access Control</h6>
+                                <ul class="small">
+                                    <li>Bypass geo-restrictions</li>
+                                    <li>Access blocked content</li>
+                                    <li>School/work firewalls</li>
+                                    <li>Fast global servers</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Note:</strong> This proxy provides basic anonymization and content access. 
+                            For maximum security and privacy, consider using a dedicated VPN service.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let proxyHistory = [];
+let currentHistoryIndex = -1;
+
+function loadProxyPage() {
+    const url = document.getElementById('proxyUrl').value;
+    const removeScripts = document.getElementById('removeScripts').checked;
+    const removeCookies = document.getElementById('removeCookies').checked;
+    
+    if (!url || !isValidUrl(url)) {
+        alert('Please enter a valid URL (e.g., https://example.com)');
+        return;
+    }
+    
+    showLoading();
+    
+    // Add to history
+    proxyHistory = proxyHistory.slice(0, currentHistoryIndex + 1);
+    proxyHistory.push(url);
+    currentHistoryIndex = proxyHistory.length - 1;
+    
+    // Update current URL display
+    document.getElementById('currentUrl').textContent = url;
+    
+    // Create proxy request
+    const proxyParams = new URLSearchParams({
+        url: url,
+        removeScripts: removeScripts,
+        removeCookies: removeCookies
+    });
+    
+    const proxyUrl = `/api/proxy?${proxyParams}`;
+    document.getElementById('proxyFrame').src = proxyUrl;
+}
+
+function isValidUrl(string) {
+    try {
+        const url = new URL(string);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (_) {
+        return false;
+    }
+}
+
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function showError() {
+    document.getElementById('loadingOverlay').innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+            <div>Failed to load content</div>
+            <small class="text-muted">The website may be blocking proxy access or temporarily unavailable</small>
+        </div>
+    `;
+}
+
+function refreshProxy() {
+    const iframe = document.getElementById('proxyFrame');
+    if (iframe.src) {
+        showLoading();
+        iframe.src = iframe.src;
+    }
+}
+
+function goBack() {
+    if (currentHistoryIndex > 0) {
+        currentHistoryIndex--;
+        const url = proxyHistory[currentHistoryIndex];
+        document.getElementById('proxyUrl').value = url;
+        loadProxyPage();
+    }
+}
+
+function goForward() {
+    if (currentHistoryIndex < proxyHistory.length - 1) {
+        currentHistoryIndex++;
+        const url = proxyHistory[currentHistoryIndex];
+        document.getElementById('proxyUrl').value = url;
+        loadProxyPage();
+    }
+}
+
+// Allow Enter key to trigger proxy loading
+document.getElementById('proxyUrl').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        loadProxyPage();
+    }
+});
+
+// Quick access buttons
+function loadQuickSite(url) {
+    document.getElementById('proxyUrl').value = url;
+    loadProxyPage();
+}
+
+// Popular sites for quick access
+const popularSites = [
+    'https://www.google.com',
+    'https://www.wikipedia.org',
+    'https://www.github.com',
+    'https://www.stackoverflow.com'
+];
+</script>
+{% endblock %}
